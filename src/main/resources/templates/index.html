@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SortKut — Share Text, Files & Links Instantly</title>
+  <meta name="description"
+    content="SortKut is your all-in-one utility: paste text, transfer files with a 6-digit code, and shorten URLs — no login needed." />
+  
+  <!-- Favicon / Brand Logo -->
+  <link rel="icon" type="image/png" th:href="@{/images/logo.png}" href="/images/logo.png" />
+  <link rel="shortcut icon" type="image/x-icon" th:href="@{/favicon.ico}" href="/favicon.ico" />
+
+  <meta property="og:title" content="SortKut" />
+  <meta property="og:description" content="Paste. Transfer. Shorten. All in one place." />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css" />
+
+  <!-- Prism CSS & JS for elegant dark-theme code highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+
+  <!-- QR Code lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ── Background Orbs ── -->
+  <div class="orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <!-- ── Navbar ── -->
+  <nav>
+    <div class="nav-logo" style="display: flex; align-items: center; gap: 8px;">
+      <img th:src="@{/images/logo.png}" src="/images/logo.png" alt="SortKut Logo" style="height: 28px; width: auto; border-radius: 6px;" />
+      Sort<span>K</span>ut
+      <span class="nav-badge">BETA</span>
+    </div>
+    <div class="nav-right">
+      <a href="#" class="nav-pill" onclick="switchTab('scribble');return false;">📝 Paste</a>
+      <a href="#" class="nav-pill" onclick="switchTab('dropzone');return false;">📦 Send</a>
+      <a href="#" class="nav-pill" onclick="switchTab('shrink');return false;">🔗 Shrink</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="dot"></span> No login needed &nbsp;·&nbsp; 100% free
+    </div>
+    <h1>Do it all.<br /><span class="grad">No acc needed.</span></h1>
+    <p>Paste text. Send files with a code. Shrink URLs. Three tools, one vibe.</p>
+
+    <!-- Feature chips (tab switchers) -->
+    <div class="feature-chips">
+      <button class="chip active" data-tab="scribble" id="chip-scribble">
+        <span class="chip-icon">📝</span> Scribble
+        <small style="color:var(--text2);font-weight:400"> </small>
+      </button>
+      <button class="chip" data-tab="dropzone" id="chip-dropzone">
+        <span class="chip-icon">📦</span> Dropzone
+        <small style="color:var(--text2);font-weight:400"> </small>
+      </button>
+      <button class="chip" data-tab="shrink" id="chip-shrink">
+        <span class="chip-icon">🔗</span> Shrink
+        <small style="color:var(--text2);font-weight:400"> </small>
+      </button>
+    </div>
+  </section>
+
+  <!-- ── Main Card Area ── -->
+  <main class="main-wrap">
+
+    <!-- Case A: Requires Password -->
+    <div th:if="${requiresPassword}" class="card"
+      style="max-width: 500px; margin: 0 auto; animation: slideUp 0.4s ease both;">
+      <div class="card-header">
+        <div class="card-icon scribble-icon">🔒</div>
+        <div>
+          <div class="card-title">Password Protected</div>
+          <div class="card-sub">This paste requires a password to unlock</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form th:action="@{'/p/' + ${pasteSlug} + '/verify'}" method="POST" autocomplete="off">
+          <div th:if="${errorMsg}"
+            style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red); color: #ff8b8b; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 14px; text-align: center;"
+            th:text="${errorMsg}"></div>
+
+          <div class="field" style="margin-bottom: 16px">
+            <label for="password-input">Enter Password</label>
+            <input type="password" id="password-input" name="password" placeholder="Super secure password..."
+              required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">✦ Unlock Paste</button>
+          <div style="text-align: center; margin-top: 14px">
+            <a href="/" class="btn-ghost btn btn-sm" style="display:inline-block; text-decoration:none">✕ Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Case D: URL Requires Password -->
+    <div th:if="${requiresUrlPassword}" class="card"
+      style="max-width: 500px; margin: 0 auto; animation: slideUp 0.4s ease both;">
+      <div class="card-header">
+        <div class="card-icon shrink-icon" style="background: rgba(236, 72, 153, 0.15); color: var(--pink);">🔒</div>
+        <div>
+          <div class="card-title">Link Protected</div>
+          <div class="card-sub">This link requires a password to redirect</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form th:action="@{'/' + ${shortCode} + '/verify'}" method="POST" autocomplete="off">
+          <div th:if="${errorMsg}"
+            style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red); color: #ff8b8b; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 14px; text-align: center;"
+            th:text="${errorMsg}"></div>
+
+          <div class="field" style="margin-bottom: 16px">
+            <label for="password-input-url">Enter Password</label>
+            <input type="password" id="password-input-url" name="password" placeholder="Enter link password..."
+              required />
+          </div>
+          <button type="submit" class="btn btn-pink btn-full">✦ Unlock Link</button>
+          <div style="text-align: center; margin-top: 14px">
+            <a href="/" class="btn-ghost btn btn-sm" style="display:inline-block; text-decoration:none">✕ Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Case B: Read-only Viewer -->
+    <div th:if="${viewPaste}" class="card" style="animation: slideUp 0.4s ease both;">
+      <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <div class="card-icon scribble-icon">📝</div>
+          <div>
+            <div class="card-title" th:text="${pasteTitle}">Untitled Paste</div>
+            <div class="card-sub" th:text="'Expires: ' + ${pasteExpires}">Expires: ...</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <a href="/" class="btn btn-ghost btn-sm" style="text-decoration:none"><i class="fa-solid fa-plus"></i> New
+            Paste</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div th:if="${errorMsg}"
+          style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red); color: #ff8b8b; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 14px; text-align: center;"
+          th:text="${errorMsg}"></div>
+
+        <div class="field" style="margin-bottom: 14px">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px">
+            <label>Shared Paste Content</label>
+            <span class="nav-badge" style="margin: 0; text-transform: uppercase;" th:text="${pasteLang}">Plain
+              Text</span>
+          </div>
+
+          <div style="position: relative;">
+            <pre
+              style="border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 16px; max-height: 450px; overflow: auto; background: #0c0f1d; margin: 0;"><code th:class="'language-' + ${pasteLang}" th:text="${pasteContent}"></code></pre>
+            <button type="button" class="btn btn-ghost btn-sm"
+              style="position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 0.75rem; background: rgba(8,11,20,0.85);"
+              th:onclick="copyText([[${pasteContent}]])">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="result-box show" style="margin-top: 20px">
+          <div class="result-header">
+            <span class="result-label">Share link</span>
+          </div>
+          <div class="result-body">
+            <div class="result-link">
+              <a th:href="@{'/p/' + ${pasteSlug}}" target="_blank" th:text="${requestUrl}">—</a>
+            </div>
+            <div class="result-actions">
+              <button class="btn btn-ghost btn-sm" th:onclick="copyText([[${requestUrl}]])">
+                <i class="fa-regular fa-copy"></i> Copy Link
+              </button>
+            </div>
+            <div class="qr-wrap" id="s-qr" style="margin-top:14px"></div>
+          </div>
+        </div>
+      </div>
+      <script th:inline="javascript">
+        setTimeout(() => {
+          makeQR('s-qr', window.location.href);
+        }, 100);
+      </script>
+    </div>
+
+    <!-- Case C: Default Homepage panels -->
+    <div th:unless="${requiresPassword != null or viewPaste != null}">
+
+      <!-- Error Message Banner -->
+      <div th:if="${errorMsg}"
+        style="background: rgba(239, 68, 68, 0.12); border: 1px solid var(--red); color: #ff8b8b; padding: 12px 16px; border-radius: var(--radius); font-size: 0.9rem; margin-bottom: 20px; text-align: center; font-weight: 500; animation: slideUp 0.3s ease;"
+        th:text="${errorMsg}"></div>
+
+      <!-- ══════════════════════════════
+       TAB 1 — SCRIBBLE
+  ══════════════════════════════ -->
+      <div class="tab-panel active" id="tab-scribble">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon scribble-icon">📝</div>
+            <div>
+              <div class="card-title">Scribble</div>
+              <div class="card-sub">Write anything · Share a link · No account</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="scribble-form" autocomplete="off">
+
+              <div class="row row-2" style="margin-bottom:14px">
+                <div class="field">
+                  <label for="s-title">Title (optional)</label>
+                  <input type="text" id="s-title" placeholder="My awesome note…" />
+                </div>
+                <div class="field">
+                  <label for="s-lang">Language</label>
+                  <select id="s-lang">
+                    <option value="plaintext">Plain text</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="sql">SQL</option>
+                    <option value="json">JSON</option>
+                    <option value="markdown">Markdown</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom:14px">
+                <label for="s-content">Content <span style="color:var(--red)">*</span></label>
+                <textarea id="s-content"
+                  placeholder="Paste your text, code, or anything here… it's your world 🌎"></textarea>
+              </div>
+
+              <div class="row row-2" style="margin-bottom:14px">
+                <div class="field">
+                  <label for="s-expire">Expires in</label>
+                  <select id="s-expire">
+                    <option value="5m">5 mins</option>
+                    <option value="10m">10 mins</option>
+                    <option value="30m">30 mins</option>
+                    <option value="1h">1 hr</option>
+                    <option value="12h">12 hr</option>
+                    <option value="24h" selected>24 hr</option>
+                  </select>
+                </div>
+                <div class="field" style="justify-content:center;padding-top:20px">
+                  <div class="pass-toggle" id="scribble-pass-toggle">
+                    <div class="toggle-switch"></div>
+                    <span class="toggle-label">🔒 Password protect</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pass-field" id="scribble-pass-field">
+                <label for="s-password">Password</label>
+                <input type="text" id="s-password" placeholder="Set a password for this paste" />
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-full" id="scribble-submit">
+                ✦ Share Paste
+              </button>
+            </form>
+
+            <!-- Result -->
+            <div class="result-box" id="scribble-result">
+              <div class="result-header">
+                <span class="result-label" style="color:var(--blue2)">✅ Paste Created</span>
+              </div>
+              <div class="result-body">
+                <div class="result-link">
+                  <a id="s-result-link" href="#" target="_blank">—</a>
+                </div>
+                <div class="result-actions">
+                  <button class="btn btn-ghost btn-sm" id="s-copy-btn"><i class="fa-regular fa-copy"></i> Copy
+                    Link</button>
+                  <button class="btn btn-ghost btn-sm"
+                    onclick="document.getElementById('s-content').value='';document.getElementById('scribble-result').classList.remove('show')">
+                    ✦ New Paste
+                  </button>
+                </div>
+                <div class="qr-wrap" id="s-qr" style="margin-top:14px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+       TAB 2 — DROPZONE
+  ══════════════════════════════ -->
+      <div class="tab-panel" id="tab-dropzone">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon dropzone-icon">📦</div>
+            <div>
+              <div class="card-title">Dropzone</div>
+              <div class="card-sub">Upload a file · Share a 6-digit code · Receive instantly</div>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <!-- Send / Receive sub-tabs -->
+            <div class="receive-tabs">
+              <div class="r-tab active" data-rtab="send">⬆ Send File</div>
+              <div class="r-tab" data-rtab="receive">⬇ Receive File</div>
+            </div>
+
+            <!-- SEND PANEL -->
+            <div id="dz-send-panel">
+              <form id="dropzone-form" autocomplete="off">
+
+                <!-- Drop area -->
+                <div class="drop-area" id="drop-area">
+                  <input type="file" id="file-input" />
+                  <div class="drop-icon">📂</div>
+                  <div class="drop-title">Drop your file here</div>
+                  <div class="drop-sub">or click to browse &nbsp;·&nbsp; Any type, up to 1GB</div>
+                </div>
+
+                <!-- File preview -->
+                <div class="file-preview" id="file-preview">
+                  <div class="file-icon-big" id="fp-icon">📄</div>
+                  <div class="file-info">
+                    <div class="file-name" id="fp-name">—</div>
+                    <div class="file-size" id="fp-size">—</div>
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-sm"
+                    onclick="document.getElementById('file-input').value='';document.getElementById('file-preview').classList.remove('show')">✕</button>
+                </div>
+
+                <div class="row row-2" style="margin:14px 0">
+                  <div class="field">
+                    <label for="dz-expire">Expires in</label>
+                    <select id="dz-expire">
+                      <option value="5m">5 mins</option>
+                      <option value="10m">10 mins</option>
+                      <option value="30m">30 mins</option>
+                      <option value="1h">1 hr</option>
+                      <option value="12h">12 hr</option>
+                      <option value="24h" selected>24 hr</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="dz-maxdown">Max downloads</label>
+                    <select id="dz-maxdown">
+                      <option value="1" selected>1 time</option>
+                      <option value="3">3 times</option>
+                      <option value="10">10 times</option>
+                      <option value="-1">Unlimited</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:14px">
+                  <div class="pass-toggle" id="dz-pass-toggle">
+                    <div class="toggle-switch"></div>
+                    <span class="toggle-label">🔒 Password protect</span>
+                  </div>
+                  <div class="pass-field" id="dz-pass-field">
+                    <label for="dz-password" style="margin-top:10px">Password</label>
+                    <input type="text" id="dz-password" placeholder="Protect this transfer" />
+                  </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="progress-wrap" id="progress-wrap">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar" id="progress-bar"></div>
+                  </div>
+                  <div class="progress-text" id="progress-text">0%</div>
+                </div>
+
+                <button type="submit" class="btn btn-green btn-full">⬆ Send File</button>
+              </form>
+
+              <!-- Upload Result -->
+              <div class="result-box" id="dropzone-result">
+                <div class="result-header">
+                  <span class="result-label" style="color:var(--green)">✅ File Ready</span>
+                </div>
+                <div class="result-body">
+                  <div class="code-hint" style="margin-bottom:6px;font-size:0.78rem;color:var(--text2)">Share this code
+                    with the receiver</div>
+                  <div class="big-code" id="dz-code-display">——</div>
+                  <div class="code-hint">Code expires as selected above</div>
+                  <div class="result-actions" style="justify-content:center;margin-top:14px">
+                    <button class="btn btn-ghost btn-sm" id="dz-copy-code"><i class="fa-regular fa-copy"></i> Copy Code</button>
+                  </div>
+                  <div class="qr-wrap" id="dz-qr" style="margin-top:14px; display: flex; justify-content: center;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RECEIVE PANEL -->
+            <div id="dz-receive-panel" style="display:none">
+              <p style="color:var(--text2);font-size:0.88rem;margin-bottom:1rem">
+                Enter the 6-digit code shared with you to find and download the file.
+              </p>
+              <div class="field" style="margin-bottom:14px">
+                <label for="receive-code">6-Digit Code</label>
+                <input type="text" id="receive-code" maxlength="6" placeholder="e.g. 482915"
+                  style="font-size:2rem;text-align:center;letter-spacing:10px;font-family:'Space Grotesk',sans-serif;font-weight:700" />
+              </div>
+              <button class="btn btn-green btn-full" id="receive-btn">🔍 Find File</button>
+
+              <!-- Receive result -->
+              <div class="result-box" id="receive-result" style="margin-top:14px">
+                <div class="result-header">
+                  <span class="result-label" style="color:var(--green)">📦 File Found</span>
+                </div>
+                <div class="result-body">
+                  <div class="file-preview show" style="margin:0 0 12px">
+                    <div class="file-icon-big">📄</div>
+                    <div class="file-info">
+                      <div class="file-name" id="r-filename">—</div>
+                      <div class="file-size" id="r-filesize">—</div>
+                    </div>
+                  </div>
+                  <a class="btn btn-green btn-full" id="r-dl-btn" href="#" download>⬇ Download File</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+       TAB 3 — SHRINK
+  ══════════════════════════════ -->
+      <div class="tab-panel" id="tab-shrink">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon shrink-icon">🔗</div>
+            <div>
+              <div class="card-title">Shrink</div>
+              <div class="card-sub">Long URL in · Short URL out · Instant</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="shrink-form" autocomplete="off">
+
+              <div class="field" style="margin-bottom:14px">
+                <label for="sh-url">Long URL <span style="color:var(--red)">*</span></label>
+                <input type="url" id="sh-url"
+                  placeholder="https://your-very-long-url-goes-here.com/some/path?query=params" />
+              </div>
+
+              <div class="row row-2" style="margin-bottom:14px">
+                <div class="field">
+                  <label for="sh-alias">Custom alias (optional)</label>
+                  <input type="text" id="sh-alias" placeholder="my-cool-link" />
+                </div>
+                <div class="field">
+                  <label for="sh-expire">Expires in</label>
+                  <select id="sh-expire">
+                    <option value="5m">5 mins</option>
+                    <option value="10m">10 mins</option>
+                    <option value="30m">30 mins</option>
+                    <option value="1h">1 hr</option>
+                    <option value="12h">12 hr</option>
+                    <option value="24h" selected>24 hr</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-bottom:14px">
+                <div class="pass-toggle" id="shrink-pass-toggle">
+                  <div class="toggle-switch"></div>
+                  <span class="toggle-label">🔒 Password protect this link</span>
+                </div>
+                <div class="pass-field" id="shrink-pass-field">
+                  <label for="sh-password" style="margin-top:10px">Password</label>
+                  <input type="text" id="sh-password" placeholder="Optional password" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-pink btn-full">⚡ Shrink It</button>
+            </form>
+
+            <!-- Result -->
+            <div class="result-box" id="shrink-result">
+              <div class="result-header">
+                <span class="result-label" style="color:var(--pink)">✅ Link Shortened</span>
+              </div>
+              <div class="result-body">
+                <div class="result-link">
+                  <a id="sh-result-link" href="#" target="_blank">—</a>
+                </div>
+                <div class="result-actions">
+                  <button class="btn btn-ghost btn-sm" id="sh-copy-btn"><i class="fa-regular fa-copy"></i> Copy
+                    Link</button>
+                  <button class="btn btn-ghost btn-sm" id="sh-refresh-btn"><i class="fa-solid fa-arrows-rotate"></i>
+                    Refresh Clicks</button>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-row">
+                  <div class="stat-chip">
+                    <div class="stat-val" id="sh-stat-total">0</div>
+                    <div class="stat-key">Total Clicks</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-val" id="sh-stat-today">0</div>
+                    <div class="stat-key">Today</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-val" id="sh-stat-last">—</div>
+                    <div class="stat-key">Last Click</div>
+                  </div>
+                </div>
+
+                <div class="qr-wrap" id="sh-qr" style="margin-top:14px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- Close th:unless wrapper -->
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="footer-features">
+      <div class="footer-feat">✅ No signup required</div>
+      <div class="footer-feat">🔒 Optional password protection</div>
+      <div class="footer-feat">⏰ Auto-expiring content</div>
+      <div class="footer-feat">📱 Works on all devices</div>
+    </div>
+    <div>Made with 💜 by <a href="#">SortKut</a> · Paste. Transfer. Shorten.</div>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script th:src="@{/js/app.js}" src="/js/app.js"></script>
+</body>
+
+</html>
